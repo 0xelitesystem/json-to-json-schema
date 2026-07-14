@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSON to JSON Schema</title>
+<meta name="description" content="Paste a JSON sample and generate a JSON Schema (draft 2020-12) that describes it. Infers types, required properties, arrays, nested objects, formats, and enums. Runs entirely in your browser.">
+<link rel="canonical" href="https://0xelitesystem.github.io/json-to-json-schema/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="JSON to JSON Schema">
+<meta property="og:description" content="Generate a JSON Schema (draft 2020-12) from a JSON sample. Type inference, required props, formats, and enums. All in your browser.">
+<meta property="og:url" content="https://0xelitesystem.github.io/json-to-json-schema/">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "JSON to JSON Schema",
+  "description": "Paste a JSON sample and generate a JSON Schema (draft 2020-12) that describes it. Infers types, required properties, arrays, nested objects, formats, and enums. Runs entirely in your browser.",
+  "url": "https://0xelitesystem.github.io/json-to-json-schema/",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Any",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Organization", "name": "0xelitesystem" }
+}
+</script>
+<style>
+:root {
+  --bg: #fafaf6;
+  --surface: #ffffff;
+  --ink: #0a1d1e;
+  --ink-soft: #2c4a4c;
+  --rule: #c8d4d3;
+  --teal: #0f5c60;
+  --teal-deep: #0a4548;
+  --gold: #b07d2a;
+  --gold-deep: #8a611f;
+  --ok: #1a5c2e;
+  --warn: #8a5a00;
+  --err: #8b1a1a;
+  --code-bg: #f0ebe1;
+}
+[data-theme="dark"] {
+  --bg: #0c1c1d;
+  --surface: #14292a;
+  --ink: #e8ebe6;
+  --ink-soft: #b0c0bd;
+  --rule: #2a4042;
+  --teal: #4ab4ba;
+  --teal-deep: #6dc8ce;
+  --gold: #d4a155;
+  --gold-deep: #e6b876;
+  --ok: #6dd380;
+  --warn: #d4a155;
+  --err: #e88080;
+  --code-bg: #0a1718;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  line-height: 1.55;
+}
+.wrap { max-width: 1100px; margin: 0 auto; }
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 2px solid var(--teal);
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+}
+h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--teal);
+}
+.tag {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.75rem;
+  color: var(--gold-deep);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+[data-theme="dark"] .tag { color: var(--gold); }
+.theme-btn {
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--ink-soft);
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.theme-btn:hover { border-color: var(--teal); color: var(--teal); }
+.lede {
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  margin-bottom: 1.75rem;
+  max-width: 65ch;
+}
+.input-box {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 1.25rem;
+  margin-bottom: 1.75rem;
+  border-radius: 3px;
+}
+label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+textarea {
+  width: 100%;
+  min-height: 200px;
+  background: var(--code-bg);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  padding: 0.85rem;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  resize: vertical;
+  border-radius: 2px;
+}
+textarea:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+.input-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+button {
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.6rem 1.1rem;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  border-radius: 2px;
+}
+button:hover { border-color: var(--teal); }
+button.primary {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: var(--surface);
+  font-weight: 600;
+}
+[data-theme="dark"] button.primary { color: var(--bg) !important; }
+button.primary:hover { background: var(--teal-deep); border-color: var(--teal-deep); }
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem 1.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.8rem;
+}
+.opt-group { display: flex; flex-direction: column; gap: 0.4rem; }
+.opt-group .opt-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.opt-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--ink);
+  margin-bottom: 0;
+}
+.results { display: none; }
+.results.show { display: block; }
+.section {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-radius: 3px;
+}
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.85rem;
+  gap: 0.85rem;
+}
+.section-title { font-size: 0.9rem; font-weight: 600; letter-spacing: 0.02em; }
+.copy-btn {
+  font-size: 0.75rem;
+  padding: 0.4rem 0.85rem;
+}
+pre {
+  background: var(--code-bg);
+  padding: 0.85rem;
+  border-radius: 2px;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--ink);
+}
+.error-msg {
+  color: var(--err);
+  font-size: 0.85rem;
+  margin-top: 0.85rem;
+  padding: 0.65rem;
+  background: var(--code-bg);
+  border-left: 3px solid var(--err);
+  border-radius: 2px;
+}
+.privacy-note {
+  font-size: 0.78rem;
+  color: var(--gold-deep);
+  margin-top: 0.75rem;
+}
+[data-theme="dark"] .privacy-note { color: var(--gold); }
+.hint { font-size: 0.78rem; color: var(--ink-soft); margin-top: 0.5rem; }
+footer {
+  margin-top: 3rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+footer a { color: var(--teal); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+@media (max-width: 640px) {
+  body { padding: 1rem 0.75rem; }
+  h1 { font-size: 1.4rem; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>JSON to JSON Schema</h1>
+    <div class="tag">Generate draft 2020-12 schemas in your browser</div>
+  </div>
+  <button class="theme-btn" id="theme-toggle" type="button">Dark</button>
+</header>
+
+<p class="lede">Paste a JSON sample and generate a JSON Schema that describes its shape. The tool infers types, marks present keys as required, builds item schemas for arrays (merging mixed elements), recurses into nested objects, detects common string formats (date-time, email, uri, uuid), and turns small repeated string sets into enums. Nothing leaves this page.</p>
+
+<div class="input-box">
+  <label for="json-input">JSON sample</label>
+  <textarea id="json-input" placeholder='{ "id": 42, "email": "jane@example.com", "tags": ["a", "b"] }' spellcheck="false" autocapitalize="off" autocorrect="off"></textarea>
+  <div class="options">
+    <div class="opt-group">
+      <span class="opt-label">Required properties</span>
+      <label><input type="radio" name="required" value="present" checked> Required = present keys</label>
+      <label><input type="radio" name="required" value="none"> Required = none</label>
+    </div>
+    <div class="opt-group">
+      <span class="opt-label">additionalProperties</span>
+      <label><input type="radio" name="addl" value="omit" checked> Omit (default true)</label>
+      <label><input type="radio" name="addl" value="true"> Set true</label>
+      <label><input type="radio" name="addl" value="false"> Set false</label>
+    </div>
+    <div class="opt-group">
+      <span class="opt-label">Detection</span>
+      <label><input type="checkbox" id="opt-format" checked> Detect string formats</label>
+      <label><input type="checkbox" id="opt-enum" checked> Infer enums</label>
+    </div>
+  </div>
+  <div class="input-row">
+    <button class="primary" id="gen-btn" type="button">Generate schema</button>
+    <button id="sample-btn" type="button">Load sample</button>
+    <button id="clear-btn" type="button">Clear</button>
+  </div>
+  <div class="privacy-note">All parsing and inference happen locally. Your JSON is never sent to any server.</div>
+</div>
+
+<div class="results" id="results">
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">JSON Schema (draft 2020-12)</div>
+      <button class="copy-btn" id="copy-btn" type="button">Copy</button>
+    </div>
+    <pre id="schema-out"></pre>
+    <div class="hint">The <code>$schema</code> keyword pins this to JSON Schema draft 2020-12. Change it if your validator targets an older draft.</div>
+  </div>
+</div>
+
+<div id="error-box"></div>
+
+<footer>
+  <div>JSON to JSON Schema. Open source, MIT licensed. No external dependencies, works offline.</div>
+  <div>Built by <a href="https://elitesystem.ai" target="_blank" rel="noopener">elitesystem.ai</a></div>
+</footer>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+const themeBtn = $("theme-toggle");
+function setTheme(t) {
+  document.documentElement.setAttribute("data-theme", t);
+  themeBtn.textContent = t === "dark" ? "Light" : "Dark";
+}
+themeBtn.addEventListener("click", () => {
+  const cur = document.documentElement.getAttribute("data-theme") || "light";
+  setTheme(cur === "dark" ? "light" : "dark");
+});
+
+const RE_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?$/;
+const RE_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RE_URI = /^[a-z][a-z0-9+.-]*:\/\/[^\s]+$/i;
+const RE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+let OPTS = {};
+
+function detectFormat(s) {
+  if (!OPTS.format) return null;
+  if (RE_DATETIME.test(s)) return "date-time";
+  if (RE_DATE.test(s)) return "date";
+  if (RE_EMAIL.test(s)) return "email";
+  if (RE_UUID.test(s)) return "uuid";
+  if (RE_URI.test(s)) return "uri";
+  return null;
+}
+
+// Infer a schema for a single value.
+function inferValue(v) {
+  if (v === null) return { type: "null" };
+  if (Array.isArray(v)) return inferArray(v);
+  const t = typeof v;
+  if (t === "object") return inferObject(v);
+  if (t === "boolean") return { type: "boolean" };
+  if (t === "number") return { type: Number.isInteger(v) ? "integer" : "number" };
+  if (t === "string") {
+    const s = { type: "string" };
+    const f = detectFormat(v);
+    if (f) s.format = f;
+    return s;
+  }
+  return {};
+}
+
+function inferObject(obj) {
+  const props = {};
+  const keys = Object.keys(obj);
+  for (const k of keys) props[k] = inferValue(obj[k]);
+  const schema = { type: "object", properties: props };
+  if (OPTS.required === "present" && keys.length) schema.required = keys.slice();
+  if (OPTS.addl === "true") schema.additionalProperties = true;
+  else if (OPTS.addl === "false") schema.additionalProperties = false;
+  return schema;
+}
+
+function inferArray(arr) {
+  const schema = { type: "array" };
+  if (arr.length === 0) return schema;
+  const itemSchemas = arr.map(inferValue);
+  schema.items = mergeSchemas(itemSchemas, arr);
+  return schema;
+}
+
+// Merge a list of item schemas into one. Values passed for enum detection.
+function mergeSchemas(schemas, values) {
+  // Group by primitive shape.
+  const types = new Set();
+  let allObjects = true;
+  let allStrings = true;
+  for (const s of schemas) {
+    if (Array.isArray(s.type)) s.type.forEach((t) => types.add(t));
+    else types.add(s.type);
+    if (s.type !== "object") allObjects = false;
+    if (s.type !== "string") allStrings = false;
+  }
+
+  if (allObjects) return mergeObjectSchemas(schemas);
+
+  if (allStrings) {
+    const merged = { type: "string" };
+    const formats = new Set(schemas.map((s) => s.format).filter(Boolean));
+    if (formats.size === 1) merged.format = [...formats][0];
+    maybeEnum(merged, values);
+    return merged;
+  }
+
+  // Mixed primitives: merge object members separately, keep union of types.
+  const objSchemas = schemas.filter((s) => s.type === "object");
+  const typeList = [...types];
+  if (objSchemas.length && objSchemas.length < schemas.length) {
+    // Objects mixed with non-objects: fall back to a plain type union.
+    return typeList.length === 1 ? { type: typeList[0] } : { type: typeList };
+  }
+  const merged = typeList.length === 1 ? { type: typeList[0] } : { type: typeList.sort() };
+  if (allStrings) maybeEnum(merged, values);
+  return merged;
+}
+
+function mergeObjectSchemas(schemas) {
+  const propMap = {};        // key -> array of value-schemas
+  const propValues = {};     // key -> array of raw values (for enum)
+  const keyCounts = {};
+  const total = schemas.length;
+  for (const s of schemas) {
+    const keys = Object.keys(s.properties || {});
+    for (const k of keys) {
+      (propMap[k] = propMap[k] || []).push(s.properties[k]);
+      keyCounts[k] = (keyCounts[k] || 0) + 1;
+    }
+  }
+  const props = {};
+  for (const k of Object.keys(propMap)) {
+    props[k] = mergeSchemas(propMap[k], null);
+  }
+  const merged = { type: "object", properties: props };
+  if (OPTS.required === "present") {
+    const req = Object.keys(keyCounts).filter((k) => keyCounts[k] === total);
+    if (req.length) merged.required = req;
+  }
+  if (OPTS.addl === "true") merged.additionalProperties = true;
+  else if (OPTS.addl === "false") merged.additionalProperties = false;
+  return merged;
+}
+
+function maybeEnum(schema, values) {
+  if (!OPTS.enum || !values) return;
+  const strs = values.filter((v) => typeof v === "string");
+  if (strs.length < 2 || strs.length !== values.length) return;
+  const uniq = [...new Set(strs)];
+  // Only build an enum for a small repeated set (repeats present, <= 12 distinct).
+  if (uniq.length <= 12 && uniq.length < strs.length && uniq.length >= 1) {
+    schema.enum = uniq;
+    delete schema.format;
+  }
+}
+
+function readOpts() {
+  OPTS = {
+    required: document.querySelector('input[name="required"]:checked').value,
+    addl: document.querySelector('input[name="addl"]:checked').value,
+    format: $("opt-format").checked,
+    enum: $("opt-enum").checked,
+  };
+}
+
+function generate() {
+  $("error-box").innerHTML = "";
+  const raw = $("json-input").value.trim();
+  if (!raw) { showError("Paste a JSON sample to generate a schema."); return; }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    showError("Input is not valid JSON. " + e.message);
+    return;
+  }
+  readOpts();
+  const body = inferValue(parsed);
+  const schema = { "$schema": "https://json-schema.org/draft/2020-12/schema", ...body };
+  $("schema-out").textContent = JSON.stringify(schema, null, 2);
+  $("results").classList.add("show");
+}
+
+function showError(msg) {
+  $("error-box").innerHTML = `<div class="error-msg">${escapeHtml(msg)}</div>`;
+  $("results").classList.remove("show");
+}
+function escapeHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+$("copy-btn").addEventListener("click", async () => {
+  const text = $("schema-out").textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    $("copy-btn").textContent = "Copied";
+    setTimeout(() => ($("copy-btn").textContent = "Copy"), 1200);
+  } catch (e) {
+    const r = document.createRange();
+    r.selectNodeContents($("schema-out"));
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(r);
+  }
+});
+
+$("sample-btn").addEventListener("click", () => {
+  $("json-input").value = JSON.stringify({
+    id: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+    email: "jane@example.com",
+    website: "https://example.com/jane",
+    createdAt: "2026-01-15T09:30:00Z",
+    active: true,
+    score: 4.5,
+    role: "admin",
+    tags: ["ops", "beta"],
+    orders: [
+      { sku: "A1", qty: 2, status: "shipped" },
+      { sku: "B7", qty: 1, status: "pending", gift: true }
+    ]
+  }, null, 2);
+});
+
+$("clear-btn").addEventListener("click", () => {
+  $("json-input").value = "";
+  $("results").classList.remove("show");
+  $("error-box").innerHTML = "";
+});
+
+$("gen-btn").addEventListener("click", generate);
+$("json-input").addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") generate();
+});
+
+setTheme("light");
+</script>
+</body>
+</html>
